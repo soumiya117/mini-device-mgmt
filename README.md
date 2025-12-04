@@ -74,3 +74,10 @@ mini-device-mgmt/
 ├─ models.py           # Data models (e.g., Device class)
 ├─ requirements.txt    # List of required Python packages
 └─ database.json       # Storage for device data (flat-file database)
+ ```
+### 📺 Watch the Demo
+
+### 📺 Watch the Demo
+### 📺 Watch the Mini Device Manager Demo
+
+[![Mini Device Management System Demo](https://cdn.loom.com/sessions/thumbnails/63b4d0a7ef1c49fcb496946009da14f6-4c047254f7add0a8-full-play.gif#t=0.1)](https://www.loom.com/embed/63b4d0a7ef1c49fcb496946009da14f6)
