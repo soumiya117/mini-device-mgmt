@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mini Device Management</title>
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <h1>Mini Device Management</h1>
+
+  <h2>Add Device</h2>
+  <form id="addDeviceForm">
+    Name: <input type="text" id="name" required>
+    Type: 
+    <select id="device_type">
+      <option value="access_controller">Access Controller</option>
+      <option value="face_reader">Face Reader</option>
+      <option value="anpr">ANPR</option>
+    </select>
+    IP: <input type="text" id="ip_address" required>
+    <button type="submit">Add Device</button>
+  </form>
+
+  <h2>Devices</h2>
+  <table border="1" id="deviceTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>IP</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+<h2>Transactions</h2>
+<select id="transactionFilter">
+  <option value="all">All Devices</option>
+</select>
+<table border="1" id="transactions-table">
+  <thead>
+    <tr>
+      <th>Transaction ID</th>
+      <th>Device</th>
+      <th>Username</th>
+      <th>Event Type</th>
+      <th>Timestamp</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+const API_BASE = "http://127.0.0.1:8000";
+
+// Fetch devices and populate table
+async function fetchDevices() {
+  const res = await fetch(API_BASE + "/devices");
+  const devices = await res.json();
+    const tbody = document.querySelector("#deviceTable tbody");
+  tbody.innerHTML = "";
+  devices.forEach(d => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="text" value="${d.name}" data-id="${d.id}" class="editName"></td>
+      <td>
+        <select data-id="${d.id}" class="editType">
+          <option value="access_controller" ${d.device_type === "access_controller" ? "selected" : ""}>Access Controller</option>
+          <option value="face_reader" ${d.device_type === "face_reader" ? "selected" : ""}>Face Reader</option>
+          <option value="anpr" ${d.device_type === "anpr" ? "selected" : ""}>ANPR</option>
+        </select>
+      </td>
+      <td><input type="text" value="${d.ip_address}" data-id="${d.id}" class="editIP"></td>
+      <td>${d.status}</td>
+      <td>
+        ${d.status === "inactive" ? `<button onclick="activateDevice('${d.id}')">Activate</button>` : `<button onclick="inactivateDevice('${d.id}')">Inactivate</button>`}
+        <button onclick="deleteDevice('${d.id}')">Delete</button>
+        <button onclick="saveDevice('${d.id}')">Save</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Add device
+document.getElementById("addDeviceForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = document.getElementById("name").value;
+  const device_type = document.getElementById("device_type").value;
+  const ip_address = document.getElementById("ip_address").value;
+
+  await fetch(API_BASE + "/devices", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, device_type, ip_address })
+  });
+
+  e.target.reset();
+  fetchDevices();
+});
+
+// Activate / Inactivate / Delete / Save
+async function activateDevice(id) {
+  await fetch(`${API_BASE}/devices/${id}/activate`, { method: "POST" });
+  fetchDevices();
+}
+
+async function inactivateDevice(id) {
+  await fetch(`${API_BASE}/devices/${id}/inactivate`, { method: "POST" });
+  fetchDevices();
+}
+
+async function deleteDevice(id) {
+  await fetch(`${API_BASE}/devices/${id}`, { method: "DELETE" });
+  fetchDevices();
+}
+
+async function saveDevice(id) {
+  const name = document.querySelector(`.editName[data-id='${id}']`).value;
+  const device_type = document.querySelector(`.editType[data-id='${id}']`).value;
+  const ip_address = document.querySelector(`.editIP[data-id='${id}']`).value;
+
+  await fetch(`${API_BASE}/devices/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, device_type, ip_address })
+  });
+
+  fetchDevices();
+}
+
+// Initial load
+fetchDevices();
+
+// Fetch and display transactions
+async function fetchTransactions() {
+  try {
+    const res = await fetch(`${API_BASE}/transactions`);
+    const transactions = await res.json();
+
+    const tbody = document.querySelector("#transactions-table tbody");
+    tbody.innerHTML = ""; // Clear existing rows
+
+    transactions.forEach(tx => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${tx.transaction_id}</td>
+        <td>${tx.device_id}</td>
+        <td>${tx.username}</td>
+        <td>${tx.event_type}</td>
+        <td>${tx.timestamp}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  } catch (err) {
+    console.error("Failed to fetch transactions:", err);
+  }
+}
+
+// Optional: auto-refresh every 3 seconds
+setInterval(fetchTransactions, 3000);
+
+// Also fetch initially
+fetchTransactions();
+
+</script>
+
+<script src="transactions.js"></script>
+
+</body>
+</html>
+
